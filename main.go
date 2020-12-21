@@ -53,33 +53,84 @@ func main()  {
 		case 0:
 			log.Printf("No matching data from %s", string(msg.Value))
 		case 1:
-			err4 := UpdateAgentStatusOnly(agentClient, warmupData.Data[0], warmupData.Data[0].Status)
+			err4,_ := UpdateAgentStatusOnly(agentClient, warmupData.Data[0], warmupData.Data[0].Status)
 			if err4 != nil {
 				log.Println(err4.Error())
 			}
 		default:
+			// khai báo sẵn 1 map chứa thông tin agent được gửi qua đang kết nối
+			// agentid : ipcontrol
+			var acvieAgent = make(map[int64]string)
 			// Chay default neu cac case tren khong match
 			for _, newInfo := range warmupData.Data{
-				err3 := UpdateAgentStatusOnly(agentClient, newInfo, true)
+				err3, thisAgentID := UpdateAgentStatusOnly(agentClient, newInfo, true)
 				if err3 != nil {
 					log.Println(err3.Error())
+					continue
+				}
+				acvieAgent[thisAgentID] = newInfo.IP
+			}
+			// update active agent done
+			// now update agent not in list active
+			// get all agent
+			agentList, err6 := getAllAgent(agentClient)
+			if err6 != nil {
+				log.Println(err6.Error())
+				continue
+			}
+			for _, agent := range agentList {
+				// check agent id in list active
+				_, ok := acvieAgent[agent.Id]
+				// Nếu không tồn tại thì cập nhật trạng thái false hết
+				if ok {
+					continue
+				}
+
+				newStatus := false
+				err8 := updateAgentStatusOnlyByID(agentClient, agent.Id, newStatus)
+				if err8 != nil {
+					log.Println(err8)
+					continue
 				}
 			}
-			// End switch - case
 		}
+		// End switch - case
 		time.Sleep(1 * time.Second)
 	}
 }
 
-func UpdateAgentStatusOnly(agentClient agentpb.AgentCTLServiceClient, newInfo warmup.WarmupElement, newStatus bool) (err error) {
+//========================================================================================================
+
+func updateAgentStatusOnlyByID(agentClient agentpb.AgentCTLServiceClient, id int64, newStatus bool) error {
 	c, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	_, err2 := (agentClient).UpdateStatus(c, &agentpb.AgentUpdateStatus{
-		IpControl: newInfo.IP,
+	_, err8 := (agentClient).UpdateStatus(c, &agentpb.AgentUpdateStatus{
+		Id:     id,
+		Status: newStatus,
+	})
+	return err8
+}
+
+func getAllAgent(agentClient agentpb.AgentCTLServiceClient) (agentList []*agentpb.Agent, err error) {
+	c, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	res, err5 := (agentClient).Gets(c, &agentpb.AgentGetAll{})
+	if err5 != nil {
+		return nil, err5
+	}
+	return res.Agents, nil
+}
+
+func UpdateAgentStatusOnly(agentClient agentpb.AgentCTLServiceClient, newInfo warmup.WarmupElement, newStatus bool) (err error, AgentID int64) {
+	var ip = newInfo.IP
+	c, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	res, err2 := (agentClient).UpdateStatus(c, &agentpb.AgentUpdateStatus{
+		IpControl: ip,
 		Status:    newStatus,
 	})
 	if err2 != nil {
-		return err2
+		return err2, 0
 	}
-	return nil
+	return nil, res.Agents[0].Id
 }
