@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	messagequeue "github.com/headend/share-module/MQ"
 	"github.com/headend/share-module/configuration"
 	"github.com/headend/share-module/model/warmup"
@@ -21,7 +22,16 @@ Note: Cập nhật ngay và luôn không cần phải gọi DB kiểm tra tồn 
 
 
 func main()  {
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	// load config
+	defer func() {
+		if err := recover(); err != nil {
+			log.Println("defer handle")
+			fmt.Println(err)
+
+		}
+
+	}()
 	var conf configuration.Conf
 	conf.LoadConf()
 	var mq messagequeue.MQ
@@ -34,7 +44,7 @@ func main()  {
 	log.Printf("Listen mesage from %s topic\n",conf.MQ.WarmUpTopic)
 	var agentConn myRpc.RpcClient
 	//try connect to agent
-	agentConn.InitializeClient(conf.RPC.Agent.Host, string(conf.RPC.Agent.Port))
+	agentConn.InitializeClient(conf.RPC.Agent.Host, conf.RPC.Agent.Port)
 	defer agentConn.Client.Close()
 	//	connect agent services
 	agentClient := agentpb.NewAgentCTLServiceClient(agentConn.Client)
@@ -45,57 +55,80 @@ func main()  {
 			log.Print("Se you again!")
 			break
 		}
-		log.Print(msg.Value)
-		var warmupData *warmup.WarmupMessage
-		json.Unmarshal(msg.Value, &warmupData)
+		go func() {
+			//defer func() {
+			//	if err := recover(); err != nil {
+			//		fmt.Println(err)
+			//
+			//	}
+			//
+			//}()
+			log.Print(string(msg.Value))
+			var warmupData *warmup.WarmupMessage
+			json.Unmarshal(msg.Value, &warmupData)
 
-		switch len(warmupData.Data) {
-		case 0:
-			log.Printf("No matching data from %s", string(msg.Value))
-		case 1:
-			err4,_ := UpdateAgentStatusOnly(agentClient, warmupData.Data[0], warmupData.Data[0].Status)
-			if err4 != nil {
-				log.Println(err4.Error())
-			}
-		default:
-			// khai báo sẵn 1 map chứa thông tin agent được gửi qua đang kết nối
-			// agentid : ipcontrol
-			var acvieAgent = make(map[int64]string)
-			// Chay default neu cac case tren khong match
-			for _, newInfo := range warmupData.Data{
-				err3, thisAgentID := UpdateAgentStatusOnly(agentClient, newInfo, true)
-				if err3 != nil {
-					log.Println(err3.Error())
-					continue
+			switch warmupData.WupType {
+			case "interval":
+				// khai báo sẵn 1 map chứa thông tin agent được gửi qua đang kết nối
+				// agentid : ipcontrol
+				var acvieAgent = make(map[string]bool)
+				// Chay default neu cac case tren khong match
+				for _, newInfo := range warmupData.Data{
+					err3 := UpdateAgentStatusOnly(agentClient, newInfo, true)
+					if err3 != nil {
+						log.Println(err3.Error())
+						continue
+					}
+					acvieAgent[newInfo.IP] = newInfo.Status
 				}
-				acvieAgent[thisAgentID] = newInfo.IP
-			}
-			// update active agent done
-			// now update agent not in list active
-			// get all agent
-			agentList, err6 := getAllAgent(agentClient)
-			if err6 != nil {
-				log.Println(err6.Error())
-				continue
-			}
-			for _, agent := range agentList {
-				// check agent id in list active
-				_, ok := acvieAgent[agent.Id]
-				// Nếu không tồn tại thì cập nhật trạng thái false hết
-				if ok {
-					continue
+				// update active agent done
+				// now update agent not in list active
+				// get all agent
+				agentList, err6 := getAllAgent(agentClient)
+				if err6 != nil {
+					log.Println(err6.Error())
+				} else {
+					for _, agent := range agentList {
+						// check agent id in list active
+						_, ok := acvieAgent[agent.IpControl]
+						//log.Printf("value %v", value)
+						//log.Printf("ok: %v", ok)
+						// Nếu không tồn tại thì cập nhật trạng thái false hết
+						if ok {
+							continue
+						}
+						if agent.Status != false {
+							newStatus := false
+							err8 := updateAgentStatusOnlyByID(agentClient, agent.Id, newStatus)
+							if err8 != nil {
+								log.Println(err8)
+								continue
+							}
+						}
+					}
 				}
-
-				newStatus := false
-				err8 := updateAgentStatusOnlyByID(agentClient, agent.Id, newStatus)
-				if err8 != nil {
-					log.Println(err8)
-					continue
+			case "event":
+				if len(warmupData.Data) == 1 {
+					err4 := UpdateAgentStatusOnly(agentClient, warmupData.Data[0], warmupData.Data[0].Status)
+					if err4 != nil {
+						log.Println(err4.Error())
+					}
+				} else {
+					log.Printf("Invalid data input from %s", string(msg.Value))
+				}
+			default :
+				if len(warmupData.Data) == 1 {
+					err4 := UpdateAgentStatusOnly(agentClient, warmupData.Data[0], warmupData.Data[0].Status)
+					if err4 != nil {
+						log.Println(err4.Error())
+					}
+				} else {
+					log.Printf("Invalid data input from %s", string(msg.Value))
 				}
 			}
-		}
-		// End switch - case
-		time.Sleep(1 * time.Second)
+			// End switch - case
+			time.Sleep(1 * time.Second)
+		}()
 	}
 }
 
@@ -121,16 +154,17 @@ func getAllAgent(agentClient agentpb.AgentCTLServiceClient) (agentList []*agentp
 	return res.Agents, nil
 }
 
-func UpdateAgentStatusOnly(agentClient agentpb.AgentCTLServiceClient, newInfo warmup.WarmupElement, newStatus bool) (err error, AgentID int64) {
+func UpdateAgentStatusOnly(agentClient agentpb.AgentCTLServiceClient, newInfo warmup.WarmupElement, newStatus bool) (err error) {
 	var ip = newInfo.IP
 	c, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	res, err2 := (agentClient).UpdateStatus(c, &agentpb.AgentUpdateStatus{
+	_, err2 := (agentClient).UpdateStatus(c, &agentpb.AgentUpdateStatus{
 		IpControl: ip,
 		Status:    newStatus,
 	})
 	if err2 != nil {
-		return err2, 0
+		return err2
 	}
-	return nil, res.Agents[0].Id
+	//log.Printf("response: %#v", res.Agents)
+	return nil
 }
