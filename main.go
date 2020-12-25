@@ -47,13 +47,14 @@ func main()  {
 	agentConn.InitializeClient(conf.RPC.Agent.Host, conf.RPC.Agent.Port)
 	defer agentConn.Client.Close()
 	//	connect agent services
-	agentClient := agentpb.NewAgentCTLServiceClient(agentConn.Client)
+	agentClient := agentpb.NewAgentServiceClient(agentConn.Client)
 	for {
 		msg, err := mq.Consumer.ReadMessage(-1)
 		if err != nil {
-			log.Printf("Consumer error: %v (%v)\n", err, msg)
-			log.Print("Se you again!")
-			break
+			log.Printf("Consumer error: %v\n", err)
+			log.Print("Retry connect...")
+			time.Sleep(10*time.Second)
+			continue
 		}
 		go func() {
 			//defer func() {
@@ -134,7 +135,7 @@ func main()  {
 
 //========================================================================================================
 
-func updateAgentStatusOnlyByID(agentClient agentpb.AgentCTLServiceClient, id int64, newStatus bool) error {
+func updateAgentStatusOnlyByID(agentClient agentpb.AgentServiceClient, id int64, newStatus bool) error {
 	c, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	_, err8 := (agentClient).UpdateStatus(c, &agentpb.AgentUpdateStatus{
@@ -144,7 +145,7 @@ func updateAgentStatusOnlyByID(agentClient agentpb.AgentCTLServiceClient, id int
 	return err8
 }
 
-func getAllAgent(agentClient agentpb.AgentCTLServiceClient) (agentList []*agentpb.Agent, err error) {
+func getAllAgent(agentClient agentpb.AgentServiceClient) (agentList []*agentpb.Agent, err error) {
 	c, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	res, err5 := (agentClient).Gets(c, &agentpb.AgentGetAll{})
@@ -154,7 +155,7 @@ func getAllAgent(agentClient agentpb.AgentCTLServiceClient) (agentList []*agentp
 	return res.Agents, nil
 }
 
-func UpdateAgentStatusOnly(agentClient agentpb.AgentCTLServiceClient, newInfo warmup.WarmupElement, newStatus bool) (err error) {
+func UpdateAgentStatusOnly(agentClient agentpb.AgentServiceClient, newInfo warmup.WarmupElement, newStatus bool) (err error) {
 	var ip = newInfo.IP
 	c, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
