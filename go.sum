@@ -42,6 +42,8 @@ github.com/headend/iptv-agent-service v0.0.0-20201222144942-416b26e9bfd7 h1:ocIn
 github.com/headend/iptv-agent-service v0.0.0-20201222144942-416b26e9bfd7/go.mod h1:9+pqsfWaQ8VySyJNoaOrfWBg2wnOvn6v1ScIrx4qjs8=
 github.com/headend/iptv-agent-service v0.0.0-20201224045003-83923e1a8d28 h1:mcf6bAKYwCXO0GuodN1qIzZwTOfPyKr/958xtbrKsK4=
 github.com/headend/iptv-agent-service v0.0.0-20201224045003-83923e1a8d28/go.mod h1:9+pqsfWaQ8VySyJNoaOrfWBg2wnOvn6v1ScIrx4qjs8=
+github.com/headend/iptv-agent-service v0.0.0-20201226155051-b92c77be368e h1:bqehqfhv+fiCyjeKb/8Gp2/cG4PRLd1nztyZlT3vVgY=
+github.com/headend/iptv-agent-service v0.0.0-20201226155051-b92c77be368e/go.mod h1:tUmaSTRdIDLoeyCitgGb6wQv+HGNHND6UKQ/cOj8u24=
 github.com/headend/share-module v0.0.0-20201220134804-3563da216f2b/go.mod h1:EYbaYXd4gflR+isQ+/4Z0J8zkNeaYJKpOMdQCt1RV8Y=
 github.com/headend/share-module v0.0.0-20201221093338-64f7635ff5d4 h1:DSdBBlNabLnRn6jmDSlM2VhxpoEBuo2yS7Dkt535TC4=
 github.com/headend/share-module v0.0.0-20201221093338-64f7635ff5d4/go.mod h1:vXgMTKM0WciE8f+tARY7tewhwzotSSYM/6AzqYkna3Q=
@@ -51,6 +53,8 @@ github.com/headend/share-module v0.0.0-20201222161010-f033e4fa2cf9 h1:MJIqlHy3tM
 github.com/headend/share-module v0.0.0-20201222161010-f033e4fa2cf9/go.mod h1:vXgMTKM0WciE8f+tARY7tewhwzotSSYM/6AzqYkna3Q=
 github.com/headend/share-module v0.0.0-20201223101502-8d5946fe882c h1:tzNguAuv+psWttRv56wa8/5777KRWeFanQ52nagku7Q=
 github.com/headend/share-module v0.0.0-20201223101502-8d5946fe882c/go.mod h1:vXgMTKM0WciE8f+tARY7tewhwzotSSYM/6AzqYkna3Q=
+github.com/headend/share-module v0.0.0-20201225012418-098bf8bf15bd h1:phVm6O8WR3Imk2GN5lGpCxnYPrplAdCiitbrkMv0svE=
+github.com/headend/share-module v0.0.0-20201225012418-098bf8bf15bd/go.mod h1:vXgMTKM0WciE8f+tARY7tewhwzotSSYM/6AzqYkna3Q=
 github.com/jinzhu/gorm v1.9.16/go.mod h1:G3LB3wezTOWM2ITLzPxEXgSkOXAntiLHS7UdBefADcs=
 github.com/jinzhu/inflection v1.0.0/go.mod h1:h+uFLlag+Qp1Va5pdKtLDYj+kHp5pxUVkryuEj+Srlc=
 github.com/jinzhu/now v1.0.1/go.mod h1:d3SSVoowX0Lcu0IBviAWJpolVfI5UJVZZ7cO71lE/z8=

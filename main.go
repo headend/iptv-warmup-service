@@ -44,7 +44,7 @@ func main()  {
 	log.Printf("Listen mesage from %s topic\n",conf.MQ.WarmUpTopic)
 	var agentConn myRpc.RpcClient
 	//try connect to agent
-	agentConn.InitializeClient(conf.RPC.Agent.Host, conf.RPC.Agent.Port)
+	agentConn.InitializeClient(conf.RPC.Agent.Gateway, conf.RPC.Agent.Port)
 	defer agentConn.Client.Close()
 	//	connect agent services
 	agentClient := agentpb.NewAgentServiceClient(agentConn.Client)
