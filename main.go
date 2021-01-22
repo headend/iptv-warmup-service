@@ -117,6 +117,15 @@ func main()  {
 				} else {
 					log.Printf("Invalid data input from %s", string(msg.Value))
 				}
+			case "ping":
+				if len(warmupData.Data) == 1 {
+					err4 := UpdateAgentVersionOnly(agentClient, warmupData.Data[0])
+					if err4 != nil {
+						log.Println(err4.Error())
+					}
+				} else {
+					log.Printf("Invalid data input from %s", string(msg.Value))
+				}
 			default :
 				if len(warmupData.Data) == 1 {
 					err4 := UpdateAgentStatusOnly(agentClient, warmupData.Data[0], warmupData.Data[0].Status)
@@ -162,6 +171,21 @@ func UpdateAgentStatusOnly(agentClient agentpb.AgentServiceClient, newInfo warmu
 	_, err2 := (agentClient).UpdateStatus(c, &agentpb.AgentUpdateStatus{
 		IpControl: ip,
 		Status:    newStatus,
+	})
+	if err2 != nil {
+		return err2
+	}
+	//log.Printf("response: %#v", res.Agents)
+	return nil
+}
+
+func UpdateAgentVersionOnly(agentClient agentpb.AgentServiceClient, newInfo warmup.WarmupElement) (err error) {
+	var ip = newInfo.IP
+	c, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	_, err2 := (agentClient).UpdateVersion(c, &agentpb.AgentUpdateVersion{
+		IpControl: ip,
+		Version:    newInfo.Version,
 	})
 	if err2 != nil {
 		return err2
